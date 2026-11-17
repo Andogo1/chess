@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Openings</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eef3;--ink:#1d2b3a;--panel:#fff;--light:#d6e0ea;--dark:#5f7f9f;--hl:#f2b01e;--best:#2e9d6a;--mute:#5d6b7a}
+@media(prefers-color-scheme:dark){:root{--bg:#18222d;--ink:#e6edf4;--panel:#223140;--mute:#9fb0c1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans Georgian',system-ui,sans-serif;line-height:1.6}
+header{padding:18px 20px 6px;max-width:1000px;margin:auto}
+h1{margin:0;font-size:1.6rem;font-weight:800}
+header p{margin:4px 0 0;color:var(--mute)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+main{display:flex;flex-wrap:wrap;gap:20px;max-width:1000px;margin:auto;padding:14px 20px 40px}
+.boardwrap{flex:1 1 380px;max-width:520px}
+.bw{position:relative;width:100%;max-width:520px}
+#board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:100%;height:auto;aspect-ratio:1/1;min-width:0;min-height:0;border-radius:6px;overflow:hidden;user-select:none;touch-action:none;container-type:inline-size}
+#arr{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#boardNotice{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;background:rgba(20,30,40,.28);color:#fff;font-weight:800;text-shadow:0 1px 3px #000;pointer-events:none}
+#boardNotice[hidden]{display:none!important}
+#boardNotice.error{background:rgba(120,35,35,.42)}
+#boardNotice span{background:rgba(20,30,40,.82);padding:12px 16px;border-radius:9px;max-width:90%}
+.sq{display:flex;align-items:center;justify-content:center;font-size:9.5cqw;line-height:1;cursor:pointer;position:relative;min-width:0;min-height:0}
+.sq.l{background:var(--light)}.sq.d{background:var(--dark)}
+.sq.last::before,.sq.hint::before{content:'';position:absolute;inset:0;background:rgba(242,176,30,.5)}
+.sq.hint::before{background:rgba(242,176,30,.7)}
+.sq.sel::before{content:'';position:absolute;inset:0;background:rgba(242,176,30,.65)}
+.sq.tgt::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:rgba(29,43,58,.35)}
+.p{display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;z-index:1}
+.w{color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 0 2px #000}
+.b{color:#111;text-shadow:0 0 1px #fff}
+.p.slide{animation:slide .38s cubic-bezier(.3,.8,.3,1);z-index:5}
+@keyframes slide{from{transform:translate(calc(var(--dx)*100%),calc(var(--dy)*100%))}to{transform:none}}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#ghost{position:fixed;pointer-events:none;z-index:99;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%) scale(1.15)}
+.ctrl{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{font:inherit;border:0;border-radius:6px;padding:9px 14px;background:var(--panel);color:var(--ink);cursor:pointer;font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.2)}
+button:hover{background:var(--hl);color:#111}
+button:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+button.main{background:var(--best);color:#fff}
+.side{flex:1 1 320px}
+.card{background:var(--panel);border-radius:8px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 6px;font-size:1.1rem}
+#lessons{display:flex;flex-direction:column;gap:6px}
+#lessons button{text-align:left;width:100%}
+#lessons button.on{background:var(--ink);color:var(--bg)}
+#comment{min-height:70px}
+#eval,#lvl{color:var(--mute);margin:8px 0 0;min-height:1.4em}
+#moves{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.mvb{padding:3px 8px;font-size:.9rem;font-weight:400}.mvb.on{background:var(--hl);color:#111}
+.view{animation:fade .4s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#menu{max-width:1000px;margin:auto;padding:10px 20px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.cat{background:var(--panel);border-radius:10px;padding:18px;text-align:left;display:block;width:100%;transition:transform .2s,box-shadow .2s}
+.cat:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(0,0,0,.18);background:var(--panel);color:var(--ink)}
+.cat b{display:block;font-size:1.05rem}.cat span{color:var(--mute);font-weight:400;font-size:.9rem}
+select{font:inherit;padding:8px;border-radius:6px;border:0}
+.vb{padding:4px 10px;font-size:.85rem;font-weight:400}.vb.on{background:var(--hl);color:#111}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Chess Openings</h1>
+  <p id="sub"></p>
+  <div class="row"><button id="back" hidden>← მენიუ</button><button id="prof"></button><button id="exp">პროგრესის კოდი</button><button id="imp">კოდის ჩატვირთვა</button></div>
+</header>
+<section id="menu" class="view"></section>
+<main id="study" hidden>
+  <div class="boardwrap">
+    <div class="bw"><div id="board"></div>
+      <svg id="arr" viewBox="0 0 8 8"><defs><marker id="ah" markerWidth="3" markerHeight="3" refX="1.5" refY="1.5" orient="auto"><path d="M0,0 L3,1.5 L0,3z" fill="#f2b01e"/></marker></defs><line id="al" stroke="#f2b01e" stroke-width=".17" stroke-linecap="round" marker-end="url(#ah)" opacity=".9" hidden/></svg>
+      <div id="boardNotice" hidden><span></span></div>
+    </div>
+    <div class="ctrl">
+      <button id="prev">◀</button><button id="next">▶</button>
+      <button id="help" class="main">დახმარება</button>
+      <button id="mode"></button>
+      <button id="arrows" aria-pressed="true">ისრები: ჩართული</button>
+      <button id="flip">გადაბრუნება</button>
+      <button id="reset">თავიდან</button>
+      <select id="engsel" hidden></select>
+      <button id="np" class="main">შემდეგი ამოცანა</button>
+    </div>
+    <p id="lvl"></p><p id="eval" aria-live="polite"></p>
+  </div>
+  <div class="side">
+    <div class="card"><h2 id="lhead"></h2><div id="lessons"></div><div id="vars" class="row"></div></div>
+    <div class="card"><h2 id="ltitle"></h2><div id="comment"></div><div id="moves"></div></div>
+  </div>
+</main>
+<div id="ghost" hidden></div>
+<script type="text/plain" id="app-code">
+const SIC=[
+{t:"1. რატომ 1...c5?",line:[
+["e4","თეთრი იკავებს ცენტრს და ხსნის ოფიცერს და ლაზიერს."],
+["c5","სიცილიური! შავი ებრძვის d4-ს არა სიმეტრიით, არამედ გვერდიდან. პოზიცია ასიმეტრიული ხდება და ორივე მხარეს აქვს მოგების შანსი."],
+["Nf3","თეთრი ამზადებს d4-ს და ანვითარებს ცხენს."],
+["d6","შავი იცავს e5-ს და ამზადებს ცხენისა და ოფიცრის განვითარებას."],
+["d4","თეთრი ხსნის ცენტრს – ეს არის „ღია სიცილიური“."],
+["cxd4","შავი ცვლის ფლანგურ c-პაიკს თეთრის ცენტრალურ d-პაიკზე. შედეგად შავს რჩება ნახევრად ღია c-ხაზი, თეთრს კი ცენტრში პაიკით უპირატესობა."],
+["Nxd4","თეთრს აქვს ცენტრის უპირატესობა და განვითარება, შავს – c-ხაზი და ფლანგური კონტრთამაში."],
+["Nf6","შავი მაშინვე უტევს e4-ს და ავითარებს ცხენს."],["Nc3","თეთრი იცავს e4-ს და ავითარებს მეორე ცხენს."],["e6","შავი ამზადებს ...d5-ს და იკავებს ცენტრს."],["Be3","თეთრი ავითარებს ფიგურას და ამზადებს გრძელ როქს."],["a6","შავი აკონტროლებს b5-ს და ამზადებს ...b5-ს."],["f3","თეთრი ამაგრებს e4-ს."],["Be7","შავი ამთავრებს მსუბუქი ფიგურების განვითარებას."],["Qd2","თეთრი აერთებს ლაზიერსა და ოფიცერს, ამზადებს O-O-O-ს."],["O-O","შავი მეფეს უსაფრთხოდ ათავსებს."],["O-O-O","ორივე მხარე სხვადასხვა ფლანგზე შეტევას გეგმავს."],["Qc7","შავი ამზადებს ...b5-ს და ზეწოლას c-ხაზზე."]]},
+{t:"2. ნაჯდორფი (5...a6)",line:[
+["e4",""],["c5",""],["Nf3",""],["d6",""],["d4",""],["cxd4",""],["Nxd4","მთავარი პოზიციისკენ მივდივართ."],
+["Nf6","ცხენი უტევს e4-ს. თეთრი უნდა დაიცვას."],
+["Nc3","e4 დაცულია."],
+["a6","ნაჯდორფის ძირითადი სვლა: a6 ართმევს თეთრს b5 და ამზადებს ...b5-ს ფლანგზე ექსპანსიისთვის."],
+["Be3","თეთრი ამზადებს Qd2-ს და O-O-O-ს (ინგლისური შეტევა)."],
+["e5","შავი განდევნის d4-ის ცხენს და იკავებს ცენტრს."],
+["Nb3","ცხენი უკან იხევს, მაგრამ ინარჩუნებს c5-ზე კონტროლს."],
+["Be7","შავი ანვითარებს ოფიცერს და ემზადება დარაბოსთვის."],
+["f3","თეთრი ამაგრებს e4-ს და ამზადებს g4-ს."],
+["Be6","ოფიცერი აკონტროლებს c4-ს და ხელს უშლის თეთრის ფლანგურ გეგმას."],
+["Qd2","მეფე გადავა გრძელ მხარეს."],
+["O-O","შავი გადის მოკლე მხარეს."],
+["O-O-O","ახლა ორივე მხარე სხვადასხვა ფლანგზე თავდასხმას გეგმავს: თეთრი – g4-h4, შავი – ...b5-b4."],
+["Nbd7","შავი ამთავრებს განვითარებას. შემდეგი გეგმა: ...b5, ...Rc8, ...Nc5."]]},
+{t:"3. დრაკონი (5...g6)",line:[
+["e4",""],["c5",""],["Nf3",""],["d6",""],["d4",""],["cxd4",""],["Nxd4",""],["Nf6",""],["Nc3",""],
+["g6","დრაკონი: ოფიცერი g7-ზე ქმნის გრძელ დიაგონალს a1–h8, „დრაკონის ცეცხლს“ თეთრი ლაზიერის წინააღმდეგ."],
+["Be3","თეთრი უკვე ემზადება „იუგოსლავიური შეტევისთვის“."],
+["Bg7","ოფიცერი ძალიან მძლავრია დიაგონალზე."],
+["f3","e4 დაცულია, e3-ს ოფიცერი დაცულია."],
+["O-O","შავი უსაფრთხოდ გადის."],
+["Qd2","თეთრი ამზადებს Bh6-ს, რომ ოფიცრების გაცვლით შავის მეფეს დაასუსტოს."],
+["Nc6","შავი ამატებს დაწოლას d4-ზე."],
+["Bc4","ოფიცერი ცდილობს Nxe6-ს და ამავე დროს აკონტროლებს f7-ს."],
+["Bd7","შავი ამზადებს ...Rc8-ს."],
+["O-O-O","ორივე მეფე სხვადასხვა მხარესაა: ახლა იწყება რბოლა. თეთრი შეუტევს h4-h5-ით, შავი კი c-ხაზზე."],
+["Rc8","შავი აღარ ფიქრობს დაცვაზე – c-ხაზი ღიაა და c3/c2 სუსტი წერტილებია."]]},
+{t:"4. სვეშნიკოვი (3...Nc6, 5...e5)",line:[
+["e4",""],["c5",""],["Nf3",""],["Nc6","შავი ანვითარებს ცხენს მანამ, სანამ d6-ს გააკეთებს."],
+["d4",""],["cxd4",""],["Nxd4",""],["Nf6",""],["Nc3",""],
+["e5","სვეშნიკოვი: შავი ათამაშებს e5-ს და იღებს d5-ის სუსტ უჯრას, სანაცვლოდ ეძლევა მყარი ცენტრი და ოფიცრის წყვილი."],
+["Ndb5","ცხენი d5-ზე გადასვლას ცდილობს."],
+["d6","d6 იცავს e5-ს და ზღუდავს Nd5-ს."],
+["Bg5","თეთრი ართმევს ცხენს Nf6-ს დაცვას."],
+["a6","ცხენი b5-ზე უნდა გადავიდეს."],
+["Na3","ცხენი მიდის გვერდზე და მერე c4/d5-ზე გადავა."],
+["b5","შავი იწყებს ფლანგურ წინსვლას, მაგრამ თეთრს ეძლევა Nd5."],
+["Nd5","მთავარი პოზიცია: თეთრის ცხენი d5-ზე ძლიერია, შავს აქვს ორი ოფიცერი და ფლანგური ინიციატივა."],
+["Be7","შავი ცვლის ცხენს და მიიღებს თამაშს."]]}
+,{t:"5. დახურული სიცილიური",line:[
+["e4","თეთრი იკავებს ცენტრს."],["c5","შავი იწყებს სიცილიურს."],["Nc3","თეთრი ირჩევს დახურულ სიცილიურს და ამზადებს g3-ს."],["Nc6","შავი ავითარებს ცხენს და აკონტროლებს d4-ს."],["g3","თეთრი ამზადებს ოფიცერს g2-ზე."],["g6","შავი ამზადებს დრაკონის დიაგონალს."],["Bg2","ოფიცერი გრძელ დიაგონალზე დგება."],["Bg7","შავი იმავე დიაგონალზე აყენებს ოფიცერს."],["d3","თეთრი ამაგრებს ცენტრს."],["d6","შავი ამყარებს e5-ს."],["f4","თეთრი იწყებს ფლანგურ შეტევას."],["Nf6","შავი ავითარებს ცხენს."],["Nf3","თეთრი ამთავრებს განვითარებას."],["O-O","შავი მეფეს უსაფრთხოებაში გადაჰყავს."],["O-O","თეთრი როქს აკეთებს."],["Be6","შავი ავითარებს ოფიცერს და აკონტროლებს d5-ს."],["h3","თეთრი ზღუდავს ...Bg4-ს."],["Qd7","შავი აერთებს ფიგურებს და ამზადებს ...Bh3-ს."]]},
+{t:"6. b3 და Bb2 სისტემა",line:[
+["e4","თეთრი იკავებს ცენტრს."],["c5","სიცილიური დაცვა."],["Nf3","თეთრი ამზადებს d4-ს."],["d6","შავი იცავს ცენტრს."],["b3","ზუსტად ეს გეგმაა: b2-პაიკი b3-ზე გადადის და ათავისუფლებს b2-ს ოფიცრისთვის."],["Nf6","შავი ავითარებს ცხენს."],["Bb2","თეთრი ოფიცერს b2-ზე აყენებს, გრძელ დიაგონალზე."],["g6","შავი ამზადებს ოფიცერს g7-ზე."],["g3","თეთრი ამზადებს მეორე ოფიცერს."],["Bg7","შავი ავითარებს ოფიცერს."],["Bg2","თეთრი ასრულებს ფიანკეტოს."],["O-O","შავი როქს აკეთებს."],["O-O","თეთრი მეფეს უსაფრთხოებაში გადაჰყავს."],["Nc6","შავი ავითარებს მეორე ცხენს."],["d3","თეთრი ამაგრებს ცენტრს."],["e5","შავი იკავებს ცენტრს."],["Nbd2","თეთრი ავითარებს ცხენს და ამზადებს Nc4-ს."],["Be6","შავი ავითარებს ოფიცერს."],["a3","თეთრი აკონტროლებს b4-ს და ამზადებს b4-ს საჭიროებისას."],["Qd7","შავი აერთებს ფიგურებს."]]}];
+
+const V=(n,mv,c={})=>({n,line:mv.replace(/[?!]/g,'').split(' ').map((m,i)=>[m,c[i]||''])});
+const L=(t,side,idea,...vars)=>({t,side,idea,vars});
+const SICL=SIC.map(x=>({t:x.t,side:'b',idea:'შავი ებრძვის ცენტრს c5-ით და იღებს ასიმეტრიულ თამაშს.',vars:[{n:'მთავარი ხაზი',line:x.line}]}));
+SICL[1].vars.push(V('6.Bg5','e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Bg5 e6 f4 Be7 Qf3 Qc7 O-O-O Nbd7',{10:'Bg5 ართმევს ცხენს Nf6-ს დაცვას და ამზადებს f4-ს.'}));
+const CATS={
+open:{n:'გახსნები (თეთრით)',d:'იტალიური, რუი ლოპესი, შოტლანდიური და სხვა',items:[
+L('იტალიური პარტია','w','ოფიცერი c4-ზე უმიზნებს f7-ს, შავის ყველაზე სუსტ უჯრას. თამაშის ხასიათი იცვლება იმის მიხედვით, რას უპასუხებს შავი.',
+ V('ჯუოკო პიანო','e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d3 d6 O-O O-O Re1 a6 Bb3 Ba7 h3 h6 Nbd2 Re8',{4:'ოფიცერი c4-ზე f7-ს უმიზნებს.',6:'c3 ამზადებს d4-ს და ტოვებს ოფიცერს უკან დახევის უჯრას.',8:'მშვიდი გეგმა: d3, მეფის გადაყვანა, ცხენი d2-ზე.'}),
+ V('4.d4 ცენტრი','e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d4 exd4 cxd4 Bb4+ Nc3 Nxe4 O-O Bxc3 d5 Bf6 Re1 Ne7 Rxe4 d6 Bg5 Bxg5 Nxg5 h6',{8:'თეთრი ცენტრს იკავებს და პაიკს სწირავს განვითარებისთვის.'}),
+ V('ორი ცხენი: 4.Ng5','e4 e5 Nf3 Nc6 Bc4 Nf6 Ng5 d5 exd5 Na5 Bb5+ c6 dxc6 bxc6 Be2 h6 Nf3 e4 Ne5 Bd6 d4 exd3 Nxd3 Qc7',{6:'Ng5 f7-ს ორმაგად ესხმის, შავმა დროულად უნდა უპასუხოს.',8:'შავი ცხენს a5-ზე აგდებს და სანაცვლოდ პაიკს იღებს.'}),
+ V('ფრიდლივერი','e4 e5 Nf3 Nc6 Bc4 Nf6 Ng5 d5 exd5 Nxd5 Nxf7 Kxf7 Qf3+ Ke6 Nc3 Nb4 Qe4 c6 a3 Na6 d4 Nc7',{10:'თეთრი ცხენს სწირავს, რომ შავის მეფე ცენტრში გამოიყვანოს.'})),
+L('რუი ლოპესი','w','ოფიცერი b5-ზე აწვება c6-ის ცხენს, რომელიც e5-ს იცავს. გეგმა: ცენტრის გახსნა d4-ით.',
+ V('დახურული ისპანური','e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 O-O h3 Nb8 d4 Nbd7',{4:'ოფიცერი ზეწოლას ახდენს c6-ს ცხენზე.',8:'მეფე უსაფრთხოებაშია და ცენტრი მზადაა.',14:'h3 ართმევს შავს ...Bg4-ს.'}),
+ V('ბერლინური','e4 e5 Nf3 Nc6 Bb5 Nf6 O-O Nxe4 d4 Nd6 Bxc6 dxc6 dxe5 Nf5 Qxd8+ Kxd8 Nc3 Ke8 h3 h5',{10:'დედოფლები იცვლება, შავის მეფე ცენტრში რჩება, მაგრამ პოზიცია მყარია.'}),
+ V('გაცვლის ვარიანტი','e4 e5 Nf3 Nc6 Bb5 a6 Bxc6 dxc6 O-O Bg4 h3 h5 d3 Qf6 Nbd2 Bxf3 Nxf3 Bd6',{6:'თეთრი ცვლის ოფიცერს და შავს პაიკებში უდარდებს სტრუქტურას.'})),
+L('შოტლანდიური პარტია','w','თეთრი მაშინვე ხსნის ცენტრს d4-ით და იღებს სივრცეს.',
+ V('მიზესის შეტევა','e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6 Nxc6 bxc6 e5 Qe7 Qe2 Nd5 c4 Ba6 b3 g6',{6:'ცვლა თეთრს ცენტრში პაიკურ უპირატესობას აძლევს.'}),
+ V('კლასიკური 4...Bc5','e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Bc5 Be3 Qf6 c3 Nge7 Bc4 Ne5 Be2 Qg6')),
+L('ვენური პარტია','w','ცხენი c3-ზე ამზადებს f4-ს და ბრძოლას ცენტრისთვის.',
+ V('ვენური გამბიტი','e4 e5 Nc3 Nf6 f4 d5 fxe5 Nxe4 Nf3 Be7 d4 O-O Bd3 f5 exf6 Bxf6 O-O Nxc3 bxc3'),
+ V('Bc4 სისტემა','e4 e5 Nc3 Nf6 Bc4 Nxe4 Qh5 Nd6 Bb3 Be7 Nf3 Nc6 Nxe5 O-O Nxc6 dxc6 d4 Bf6')),
+L('ლონდონის სისტემა','w','მარტივი, მყარი ჩარჩო: d4, Bf4, e3, Nf3. თითქმის ყველა ვარიანტს ერგება.',
+ V('d5-ის წინააღმდეგ','d4 d5 Bf4 Nf6 e3 e6 Nf3 Bd6 Bg3 O-O Nbd2 c5 c3 Nc6 Bd3 Qe7',{2:'ოფიცერი გარეთ გამოდის, სანამ e3 დახურავს.',8:'თეთრი ინარჩუნებს ოფიცრების წყვილს.'}),
+ V('c5-ის წინააღმდეგ','d4 d5 Bf4 c5 e3 Nc6 c3 Nf6 Nd2 e6 Ngf3 Bd6 Bg3 O-O Bd3 Qe7'),
+ V('Nf6-ის წინააღმდეგ','d4 Nf6 Bf4 e6 e3 c5 c3 Nc6 Nd2 Bd6 Bg3 O-O Ngf3 b6 Bd3 Bb7')),
+L('კატალონური','w','ოფიცერი g2-ზე ძლიერ დიაგონალს აკონტროლებს და ზეწოლას ახდენს ცენტრზე.',
+ V('ღია კატალონური','d4 Nf6 c4 e6 g3 d5 Bg2 Be7 Nf3 O-O O-O dxc4 Qc2 a6 Qxc4 b5 Qc2 Bb7 Bd2 Nc6',{4:'g3 ოფიცერს აძლევს გრძელ დიაგონალს.'}),
+ V('დახურული კატალონური','d4 Nf6 c4 e6 g3 d5 Bg2 Be7 Nf3 O-O O-O c6 Qc2 Nbd7 Nbd2 b6 b3 Bb7 Bb2 Rc8')),
+L('ინგლისური გახსნა','w','c4 აკონტროლებს d5-ს და იძლევა მოქნილ თამაშს.',
+ V('სიმეტრიული','c4 e5 Nc3 Nf6 Nf3 Nc6 g3 d5 cxd5 Nxd5 Bg2 Nb6 O-O Be7 d3 O-O'),
+ V('სიცილიური სტილით','c4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7 Nf3 e6 O-O Nge7 d3 O-O Rb1 d5')),
+L('რეტი / მეფის ინდური შეტევა','w','თეთრი ქმნის მოქნილ სტრუქტურას g3, Bg2, O-O და მერე ირჩევს გეგმას.',
+ V('რეტი','Nf3 d5 g3 Nf6 Bg2 e6 O-O Be7 d3 O-O Nbd2 c5 e4 Nc6 Re1 b5'),
+ V('მეფის ინდური შეტევა','Nf3 d5 g3 c5 Bg2 Nc6 O-O e5 d3 Nf6 Nbd2 Be7 e4 O-O Re1 dxe4 dxe4')),
+L('ალაპინი (c3 სიცილიურის წინააღმდეგ)','w','c3 ამზადებს d4-ს, სიცილიურის ცენტრში დაუყოვნებლივ ბრძოლისთვის.',
+ V('2...Nf6','e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5 dxe5 Nxe5 Bd7'),
+ V('2...d5','e4 c5 c3 d5 exd5 Qxd5 d4 Nf6 Nf3 e6 Be2 Nc6 O-O cxd4 cxd4 Be7 Nc3 Qd6')),
+L('ტრომპოვსკი / კოლე','w','სწრაფი, ნაკლებად თეორიული სისტემები d4 გახსნებზე.',
+ V('ტრომპოვსკი','d4 Nf6 Bg5 Ne4 Bf4 c5 f3 Qa5+ c3 Nf6 dxc5 e6 e4 Bxc5'),
+ V('კოლეს სისტემა','d4 d5 Nf3 Nf6 e3 e6 Bd3 c5 b3 Nc6 O-O Bd6 Bb2 O-O Nbd2 b6 c4 Bb7'))
+]},
+gam:{n:'გამბიტები',d:'მსხვერპლი, რომელიც პოზიციას გაძლევს',items:[
+L('ქალის გამბიტი','w','c4 პაიკი თავს ესხმის d5-ს. თუ შავი აიღებს, თეთრი პაიკს ისევ აიღებს; თუ არა, თეთრი d5-ს გაცვლის და ცენტრს აიღებს.',
+ V('უარყოფილი (…e6)','d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 O-O Nf3 h6 Bh4 b6 cxd5 Nxd5 Bxe7 Qxe7 Nxd5 exd5',{4:'ცხენი c3-ზე კიდევ ერთხელ აკონტროლებს d5-ს.',12:'მხოლოდ ახლა იღებს c4 პაიკი d5-ს.'}),
+ V('გაცვლა cxd5','d4 d5 c4 e6 cxd5 exd5 Nc3 Nf6 Bg5 Be7 e3 O-O Bd3 Nbd7 Nge2 Re8 O-O Nf8',{4:'c4-ის პაიკი იღებს d5-ს და თეთრს ეძლევა მყარი ცენტრი.'}),
+ V('მიღებული (…dxc4)','d4 d5 c4 dxc4 Nf3 Nf6 e3 e6 Bxc4 c5 O-O a6 Qe2 b5 Bb3 Nc6 Rd1 Qc7 Nc3 Bb7',{4:'შავმა პაიკი აიღო, თეთრი კი სწრაფად ანვითარებს ფიგურებს.',8:'ოფიცერი პაიკს უბრუნდება c4-ზე.'}),
+ V('სლავური','d4 d5 c4 c6 Nf3 Nf6 Nc3 dxc4 a4 Bf5 e3 e6 Bxc4 Bb4 O-O Nbd7 Qe2 Bg6')),
+L('მეფის გამბიტი','w','f4 სწირავს პაიკს, რათა e-პაიკი მოაშოროს და ცენტრი აიღოს.',
+ V('აღებული, 3...g5','e4 e5 f4 exf4 Nf3 g5 h4 g4 Ne5 Nf6 Bc4 d5 exd5 Bd6 d4 Nh5 Nc3 Qe7',{2:'თეთრი ეშვება რისკზე: პაიკი მიდის, ინიციატივა რჩება.'}),
+ V('3...d6','e4 e5 f4 exf4 Nf3 d6 d4 g5 h4 g4 Ng1 Bg7 Nc3 Nc6 Bxf4 Nge7'),
+ V('ფალკბეერის კონტრგამბიტი','e4 e5 f4 d5 exd5 e4 d3 Nf6 dxe4 Nxe4 Nf3 Bc5 Qe2 Qe7 Nc3 Bf2+',{3:'შავი უპასუხებს ცენტრის შეტევით d5-ით.'})),
+L('ევანსის გამბიტი','w','b4 პაიკს სწირავს, რომ c3-d4-ით ცენტრი აიღოს.',
+ V('მთავარი ხაზი','e4 e5 Nf3 Nc6 Bc4 Bc5 b4 Bxb4 c3 Ba5 d4 exd4 O-O d6 cxd4 Bb6 Nc3 Na5 Bg5 f6 Bf4 Nxc4',{6:'პაიკი b4-ზე სწირვა ცენტრისთვის.',10:'თეთრს ცენტრი და განვითარების უპირატესობა აქვს.'}),
+ V('7...Nge7','e4 e5 Nf3 Nc6 Bc4 Bc5 b4 Bxb4 c3 Bc5 d4 exd4 cxd4 Bb4+ Bd2 Bxd2+ Nbxd2 d5 exd5 Qxd5')),
+L('დანიური გამბიტი','w','თეთრი ორ პაიკს სწირავს სწრაფი განვითარებისთვის და ოფიცრებით მეფეს უმიზნებს.',
+ V('3 პაიკი','e4 e5 d4 exd4 c3 dxc3 Bc4 cxb2 Bxb2 d5 Bxd5 Nf6 Bxf7+ Kxf7 Qxd8 Bb4+ Qd2 Bxd2+ Nxd2',{8:'ორი ოფიცერი დიაგონალებზე შავის მეფეს უმიზნებს.'}),
+ V('შავი იღებს მხოლოდ ერთს','e4 e5 d4 exd4 c3 d5 exd5 Qxd5 cxd4 Nc6 Nf3 Bg4 Be2 Nf6 Nc3 Bb4')),
+L('სმით-მორა (სიცილიურის წინააღმდეგ)','w','d4 პაიკს სწირავს სწრაფი განვითარებისთვის და ღია ხაზებისთვის.',
+ V('მთავარი ხაზი','e4 c5 d4 cxd4 c3 dxc3 Nxc3 Nc6 Nf3 d6 Bc4 e6 O-O Nf6 Qe2 Be7 Rd1 e5 Bg5 O-O')),
+L('მარშალის გამბიტი (შავით)','b','შავი პაიკს სწირავს ძლიერი შეტევისთვის რუი ლოპესში.',
+ V('მარშალი','e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O c3 d5 exd5 Nxd5 Nxe5 Nxe5 Rxe5 c6 d4 Bd6 Re1 Qh4 g3 Qh3 Be3 Bg4 Qd3 Rae8',{15:'ახლა შავი პაიკს სწირავს და შეტევას იწყებს.'})),
+L('ბენკოს გამბიტი (შავით)','b','შავი პაიკს სწირავს ფლანგზე, რათა c- და b-ხაზი გახსნას.',
+ V('ბენკო','d4 Nf6 c4 c5 d5 b5 cxb5 a6 bxa6 Bxa6 Nc3 d6 e4 Bxf1 Kxf1 g6 g3 Bg7 Kg2 O-O',{5:'b5! შავი პაიკს სწირავს ფლანგურ ხაზებზე თამაშისთვის.'})),
+L('ალბინის კონტრგამბიტი (შავით)','b','e5 პასუხობს ქალის გამბიტს და მასთან ერთად d4 აქცევს მძიმე პაიკად.',
+ V('ალბინი','d4 d5 c4 e5 dxe5 d4 Nf3 Nc6 g3 Be6 Nbd2 Qd7 Bg2 O-O-O'))
+]},
+def:{n:'დაცვები (შავით)',d:'სიცილიური, ფრანგული, კარო-კანი და სხვა',items:[...SICL,
+L('ფრანგული დაცვა','b','e6 და d5: მყარი სტრუქტურა და კონტრშეტევა თეთრის ცენტრზე.',
+ V('ვინავერი','e4 e6 d4 d5 Nc3 Bb4 e5 c5 a3 Bxc3+ bxc3 Ne7 Qg4 Qc7 Qxg7 Rg8 Qxh7 cxd4 Ne2 Nbc6 f4 Bd7'),
+ V('კლასიკური','e4 e6 d4 d5 Nc3 Nf6 Bg5 Be7 e5 Nfd7 Bxe7 Qxe7 f4 O-O Nf3 c5'),
+ V('ტარაში','e4 e6 d4 d5 Nd2 Nf6 e5 Nfd7 Bd3 c5 c3 Nc6 Ne2 cxd4 cxd4 f6 exf6 Nxf6 O-O Bd6'),
+ V('წინსვლა','e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Qb6 a3 c4 Nbd2 Na5 g3 Bd7')),
+L('კარო-კანი','b','c6 ამზადებს d5-ს ისე, რომ ოფიცერი c8-ზე გარეთ გამოვა.',
+ V('კლასიკური','e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5 Ng3 Bg6 h4 h6 Nf3 Nd7 h5 Bh7 Bd3 Bxd3 Qxd3 e6 Bf4 Qa5+'),
+ V('წინსვლა','e4 c6 d4 d5 e5 Bf5 Nf3 e6 Be2 c5 Be3 cxd4 Nxd4 Nc6'),
+ V('გაცვლა','e4 c6 d4 d5 exd5 cxd5 Bd3 Nc6 c3 Nf6 Bf4 Bg4 Qb3 Qd7 Nd2 e6')),
+L('პირცი / ალეხინი','b','მოქნილი დაცვები: შავი ცენტრს ცხენებით უტევს.',
+ V('პირცი','e4 d6 d4 Nf6 Nc3 g6 Nf3 Bg7 Be2 O-O O-O c6 a4 Nbd7 Re1 e5'),
+ V('პირცი, ავსტრიული','e4 d6 d4 Nf6 Nc3 g6 f4 Bg7 Nf3 c5 Bb5+ Bd7 e5 Ng4'),
+ V('ალეხინი','e4 Nf6 e5 Nd5 d4 d6 Nf3 Bg4 Be2 e6 O-O Be7 c4 Nb6 Nc3 O-O')),
+L('პეტროვი / ფილიდორი','b','მყარი, სიმეტრიული დაცვები e4 e5-ში.',
+ V('პეტროვი','e4 e5 Nf3 Nf6 Nxe5 d6 Nf3 Nxe4 d4 d5 Bd3 Nc6 O-O Be7 c4 Nb4 Be2 O-O Nc3 Bf5'),
+ V('ფილიდორი','e4 e5 Nf3 d6 d4 Nf6 Nc3 Nbd7 Bc4 Be7 O-O O-O Qe2 c6 a4 exd4 Nxd4 Re8')),
+L('სკანდინავიური','b','d5 მაშინვე ეჯახება e4-ს, დედოფალი სწრაფად გამოდის.',
+ V('Qxd5','e4 d5 exd5 Qxd5 Nc3 Qa5 d4 Nf6 Nf3 c6 Bc4 Bf5 O-O e6 Re1 Bb4 Bd2 O-O',{4:'დედოფალი a5-ზე გადადის და შავმა უნდა განავითაროს ფიგურები, არა ისევ პაიკებით თამაში.'}),
+ V('2...Nf6 — თანამედროვე','e4 d5 exd5 Nf6 d4 Nxd5 c4 Nb6 Nc3 g6 Nf3 Bg7 Be2 O-O O-O Nc6 Be3',{2:'შავი ჯერ ცხენს ავითარებს და d5-პაიკს მაშინვე არ იბრუნებს.'}),
+ V('ისლანდიური გამბიტი','e4 d5 exd5 Nf6 c4 e6 dxe6 Bxe6 Nf3 Nc6 d4 Bb4+ Nc3 Qe7 Be2 O-O-O O-O Kb8',{4:'შავი e6-ით პაიკს სწირავს სწრაფი განვითარებისა და აქტიური ფიგურებისთვის.'})),
+L('მეფის ინდური დაცვა','b','შავი ცენტრს თეთრს უთმობს, შემდეგ ფლანგიდან ესხმის.',
+ V('კლასიკური','d4 Nf6 c4 g6 Nc3 Bg7 e4 d6 Nf3 O-O Be2 e5 O-O Nc6 d5 Ne7 Ne1 Nd7 Be3 f5')),
+L('ნიმცო-ინდური / გრიუნფელდი','b','ორი მძლავრი დაცვა d4-ის წინააღმდეგ.',
+ V('ნიმცო-ინდური','d4 Nf6 c4 e6 Nc3 Bb4 e3 O-O Bd3 d5 Nf3 c5 O-O Nc6 a3 Bxc3 bxc3 dxc4 Bxc4 Qc7'),
+ V('გრიუნფელდი','d4 Nf6 c4 g6 Nc3 d5 cxd5 Nxd5 e4 Nxc3 bxc3 Bg7 Nf3 c5 Be3 Qa5 Qd2 O-O')),
+L('სლავური / ქალის გამბიტი უარყოფილი','b','მყარი დაცვები ქალის გამბიტში.',
+ V('სლავური','d4 d5 c4 c6 Nf3 Nf6 Nc3 dxc4 a4 Bf5 e3 e6 Bxc4 Bb4 O-O Nbd7 Qe2 Bg6'),
+ V('QGD','d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 O-O Nf3 h6 Bh4 b6 Bd3 Bb7')),
+L('ჰოლანდიური','b','f5 აკონტროლებს e4-ს და ქმნის აგრესიულ სტრუქტურას.',
+ V('სტილუოლი','d4 f5 g3 Nf6 Bg2 e6 Nf3 Be7 O-O O-O c4 d6 Nc3 Qe8'))
+]},
+m2:{n:'მატი 2 სვლაში',d:'ახალი ამოცანა ყოველ ჯერზე, სირთულე იზრდება',gen:2},
+m3:{n:'მატი 3 სვლაში',d:'უფრო ღრმა გათვლა, სირთულე იზრდება',gen:3},
+free:{n:'თამაში Stockfish-თან',d:'აირჩიე დონე 1-დან 5-მდე'}
+};
+// იტალიურის საწყისი ხაზი არის Fried Liver: 4.Ng5 და 6.Nxf7.
+CATS.open.items[0].defaultVar=3;
+
+const $=id=>document.getElementById(id);
+const GL={K:'♚',Q:'♛',R:'♜',B:'♝',N:'♞',P:'♟'};
+/* ვამოწმებთ ყველა ხაზს: არასწორი სვლისას ხაზი იჭრება */
+Object.values(CATS).forEach(c=>(c.items||[]).forEach(l=>{l.vars.forEach(v=>{const g=new Chess();let n=0;for(const e of v.line){if(!g.move(e[0]))break;n++}v.line=v.line.slice(0,n)});l.vars=l.vars.filter(v=>v.line.length>=4)}));
+const LV=[{n:'1 · დამწყები',skill:0,ms:120,mpv:4},{n:'2 · მოყვარული',skill:4,ms:200,mpv:3},{n:'3 · საშუალო',skill:9,ms:300,mpv:3},{n:'4 · ძლიერი',skill:15,ms:500,mpv:2},{n:'5 · Stockfish (მაქსიმუმი)',skill:20,ms:800,mpv:1}];
+let P={name:'',done:{},vdone:{},eng:2,lv:{m2:1,m3:1},log:[]};
+try{Object.assign(P,JSON.parse(localStorage.getItem('chessProfile')||'{}'))}catch(e){}
+P.log=P.log||[];
+const today=()=>new Date().toLocaleDateString('sv');
+const logAct=(k,t)=>{P.log.push({d:today(),k,t});if(P.log.length>200)P.log.shift()};
+const save=()=>{try{localStorage.setItem('chessProfile',JSON.stringify(P))}catch(e){}};
+let game=new Chess(),cur=null,flip=false,sel=null,hint=null,last=null,anim=false,dragF=null,drag=null,catKey=null,arrowsOn=true,autoHintFen=null,autoHintMove=null,autoHintBusy=false;
+const norm=s=>s.replace(/[+#]/g,'');
+const setMsg=t=>{$('comment').textContent=t};
+function boardNotice(text,kind='loading'){const n=$('boardNotice');if(!n)return;const span=n.querySelector('span');span.textContent=text||'';n.classList.toggle('error',kind==='error');n.hidden=!text;}
+function view(){if(cur&&cur.rev!=null){const g=new Chess();let lm=null;for(let i=0;i<cur.rev;i++)lm=g.move(cur.hist[i].san);return{g,lm,live:false}}return{g:game,lm:last,live:true}}
+function render(){
+  const V=view(),g=V.g,b=$('board');b.innerHTML='';
+  const tg=sel&&V.live?game.moves({square:sel,verbose:true}).map(m=>m.to):[];
+  for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){
+    const r=flip?vr:7-vr,c=flip?7-vc:vc,name='abcdefgh'[c]+(r+1),p=g.get(name),d=document.createElement('div');
+    d.className='sq '+((r+c)%2?'l':'d');d.dataset.n=name;
+    if(V.lm&&(name===V.lm.from||name===V.lm.to))d.classList.add('last');
+    if(hint&&(name===hint.from||name===hint.to))d.classList.add('hint');
+    if(name===sel)d.classList.add('sel');
+    if(tg.includes(name))d.classList.add('tgt');
+    if(p){const sp=document.createElement('span');sp.className='p '+p.color;sp.textContent=GL[p.type.toUpperCase()];
+      if(name===dragF)sp.style.opacity=.25;
+      if(anim&&V.live&&V.lm&&name===V.lm.to){const x=n=>flip?7-n:n,fc='abcdefgh'.indexOf(V.lm.from[0]),fr=+V.lm.from[1]-1;
+        sp.style.setProperty('--dx',x(fc)-x(c));sp.style.setProperty('--dy',flip?fr-r:r-fr);sp.classList.add('slide')}
+      d.appendChild(sp)}
+    b.appendChild(d)}
+  anim=false;
+  const al=$('al'),a=hint;
+  if(a){const pt=s=>{const f='abcdefgh'.indexOf(s[0]),r=+s[1]-1;return[(flip?7-f:f)+.5,(flip?r:7-r)+.5]};
+    const[x1,y1]=pt(a.from),[x2,y2]=pt(a.to),L=Math.hypot(x2-x1,y2-y1)||1;
+    al.setAttribute('x1',x1);al.setAttribute('y1',y1);al.setAttribute('x2',x2-(x2-x1)/L*.3);al.setAttribute('y2',y2-(y2-y1)/L*.3);al.hidden=false}
+  else al.hidden=true;
+}
+const shake=()=>{const b=$('board');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')};
+const userColor=()=>(cur&&cur.side)||'w';
+function curLine(){return cur.cands.includes(cur.pref)?cur.pref:cur.cands[0]}
+function nextMv(){const l=cur.cands.length&&curLine(),e=l&&l.line[cur.step];if(!e)return null;const m=game.moves({verbose:true}).find(m=>norm(m.san)===norm(e[0]));if(m)m.e=e;return m}
+function refresh(){
+  hint=null;
+  if(cur&&cur.rev!=null)hint=view().lm?{from:view().lm.from,to:view().lm.to}:null;
+  else if(cur&&cur.help)hint=cur.help;
+  else if(arrowsOn&&cur&&cur.kind==='lesson'&&!cur.fin&&game.turn()===cur.side&&!cur.busy){const m=nextMv();if(m)hint={from:m.from,to:m.to}}
+  if(!hint&&arrowsOn&&cur&&cur.kind!=='puz'&&cur.rev==null&&!cur.busy&&!game.game_over()&&game.turn()===userColor()){
+    if(autoHintFen===game.fen()&&autoHintMove)hint=autoHintMove;else requestAutoHint();
+  }
+  render();
+  const mv=$('moves');mv.innerHTML='';
+  if(cur&&cur.kind==='lesson')cur.hist.forEach((m0,i)=>{const m=[m0.san,m0.c];const b=document.createElement('button');b.className='mvb'+(cur.rev===i+1?' on':'');
+    b.textContent=(i%2?'':(i/2+1)+'. ')+m[0];b.onclick=()=>{cur.rev=i+1;setMsg(m[1]||'სვლა '+m[0]);refresh()};mv.appendChild(b)});
+  const k=cur&&cur.kind;
+  ['prev','next','mode'].forEach(i=>$(i).hidden=k!=='lesson');
+  $('engsel').hidden=!(k==='free'||(k==='lesson'&&cur.fin));
+  $('np').hidden=!(k==='puz'&&cur.done);$('reset').hidden=k==='puz';
+  $('reset').textContent=k==='free'?'ახალი თამაში':'თავიდან';
+  if(k==='lesson')$('mode').textContent=cur.mode==='learn'?'ვარჯიში (ისრების გარეშე)':'მაჩვენე ისრებით';
+  $('lvl').textContent=k==='puz'?'დონე: '+(Math.round(P.lv[cur.k]*10)/10):'';
+}
+/* ===== მოთამაშის ჩატარებული სვლა ===== */
+function attempt(from,to,dragged){
+  sel=null;
+  if(!cur||cur.busy)return render();
+  if(cur.kind==='puz')return puzMove(from,to,dragged);
+  if(cur.kind==='lesson'&&!cur.fin)return lessonMove(from,to,dragged);
+  const m=game.moves({verbose:true}).find(x=>x.from===from&&x.to===to);
+  if(!m)return render();
+  last=game.move({from,to,promotion:'q'});cur.help=null;anim=!dragged;refresh();
+  if(game.game_over())setMsg(game.in_checkmate()?'მატი!':'თამაში დასრულდა.');else setTimeout(cpuMove,120)}
+function lessonMove(from,to,dragged){
+  const m=game.moves({verbose:true}).find(x=>x.from===from&&x.to===to);if(!m)return render();
+  const nc=cur.cands.filter(l=>l.line[cur.step]&&norm(l.line[cur.step][0])===norm(m.san));
+  if(!nc.length){cur.mist++;shake();setMsg('ეს სვლა ამ გახსნაში არ არის. სცადე სხვა ან დააჭირე „დახმარებას“.');return render()}
+  const e=(nc.includes(cur.pref)?cur.pref:nc[0]).line[cur.step];
+  last=game.move(m.san);cur.hist.push({san:m.san,c:e[1]});cur.cands=nc;cur.step++;cur.help=null;anim=!dragged;setMsg(e[1]||'სწორია!');
+  if(!checkFin())oppReply(80);refresh()}
+function oppReply(delay){
+  const me=cur;if(me.fin||game.turn()===me.side)return;
+  const pool=me.cands.filter(l=>l.line[me.step]);if(!pool.length){checkFin();return}
+  me.busy=true;
+  setTimeout(()=>{if(cur!==me)return;
+    const pk=me.fixed&&pool.includes(me.pref)?me.pref:pool[Math.floor(Math.random()*pool.length)],e=pk.line[me.step];
+    last=game.move(e[0]);me.hist.push({san:e[0],c:e[1]});me.cands=pool.filter(l=>norm(l.line[me.step][0])===norm(e[0]));me.step++;anim=true;me.busy=false;
+    if(e[1])setMsg(e[1]);checkFin();refresh()},delay)}
+function checkFin(){
+  if(cur.fin||cur.cands.some(l=>l.line[cur.step]))return false;
+  cur.fin=true;P.done[cur.id]=(P.done[cur.id]||0)+1;logAct(catKey,cur.L.t);if(cur.pref)P.vdone[cur.id+'#'+cur.pref.n]=1;save();markList();
+  setMsg('გახსნა დასრულებულია ✓ ახლა გააგრძელე თავისუფლად, კომპიუტერი (დონე '+(P.eng+1)+') გიპასუხებს. „დახმარება“ გაჩვენებს Stockfish-ის სვლას.');
+  if(game.turn()!==cur.side)setTimeout(cpuMove,120);return true}
+function markList(){document.querySelectorAll('#lessons button').forEach((b,i)=>{const l=LESSONS[i];if(!l)return;b.textContent=(P.done[l.id]?'✓ ':'')+l.t;b.classList.toggle('on',cur&&cur.i===i)})}
+function startLesson(i,vi){
+  const L=LESSONS[i];if(!L.vars.length)return;
+  const fresh=L.vars.filter(v=>!P.vdone[L.id+'#'+v.n]),pool=fresh.length?fresh:L.vars;
+  const useDefault=vi==null&&Number.isInteger(L.defaultVar)&&L.vars[L.defaultVar];
+  const pref=vi!=null?L.vars[vi]:(useDefault?L.vars[L.defaultVar]:pool[Math.floor(Math.random()*pool.length)]);
+  cur={kind:'lesson',L,i,id:L.id,side:L.side,hist:[],step:0,rev:null,help:null,mist:0,fin:false,busy:false,cands:L.vars.slice(),pref,fixed:vi!=null||!!useDefault};
+  cur.mode=P.done[L.id]?'practice':'learn';game=new Chess();last=null;sel=null;flip=cur.side==='b';
+  $('ltitle').textContent=L.t;$('eval').textContent='';
+  const vb=$('vars');vb.innerHTML='';
+  L.vars.forEach((v,j)=>{const b=document.createElement('button');b.className='vb'+(v===pref?' on':'');b.textContent=(P.vdone[L.id+'#'+v.n]?'✓ ':'')+v.n;b.onclick=()=>startLesson(i,j);vb.appendChild(b)});
+  setMsg((L.idea?L.idea+' ':'')+(cur.mode==='learn'?'ყვითელი ისარი გიჩვენებს, სად უნდა ითამაშო. გადაიტანე ფიგურა ან დააჭირე ფიგურას და უჯრას.':'ახლა ჩემით ითამაშე. თუ გაგიჭირდა, დააჭირე „დახმარებას“.'));
+  markList();oppReply(80);refresh()}
+function startFree(){$('vars').innerHTML='';cur={kind:'free',side:'w',busy:false};game=new Chess();last=null;sel=null;flip=false;$('ltitle').textContent='თავისუფალი თამაში';$('eval').textContent='';
+  setMsg('შენ თამაშობ თეთრებით. „დახმარება“ გაჩვენებს საუკეთესო სვლას.');refresh()}
+/* ===== Stockfish =====
+   Use the standalone JavaScript/ASM worker build first. It has no external
+   .wasm asset, so it avoids the recurring "Failed to fetch" error caused by
+   browsers failing to retrieve a separate WebAssembly file from a CDN.
+   Load it inside a Blob worker with importScripts; this keeps the page itself
+   independent of cross-origin script tags and avoids fetching JS as text.
+*/
+const SF={main:{p:null,q:Promise.resolve()},gen:{p:null,q:Promise.resolve()}};
+const SF_JS_WORKERS=[
+  'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',
+  'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js',
+  'https://unpkg.com/stockfish.js@10.0.2/stockfish.js'
+];
+async function startSFWorker(url){
+  if(typeof Worker!=='function'||typeof Blob!=='function'||!URL.createObjectURL)
+    throw Error('ამ ბრაუზერში Web Worker არ არის მხარდაჭერილი');
+  const bootstrap='importScripts('+JSON.stringify(url)+');';
+  const blob=new Blob([bootstrap],{type:'text/javascript'});
+  const blobUrl=URL.createObjectURL(blob);
+  let w;
+  try{w=new Worker(blobUrl)}catch(e){URL.revokeObjectURL(blobUrl);throw e}
+  w._blobUrl=blobUrl;
+  try{
+    await new Promise((resolve,reject)=>{
+      let settled=false;
+      const timer=setTimeout(()=>finish(Error('Stockfish-ის JavaScript ფაილი ჩაიტვირთა, მაგრამ ძრავამ UCI პასუხი არ დააბრუნა')),30000);
+      const cleanup=()=>{clearTimeout(timer);w.removeEventListener('message',ready);w.removeEventListener('error',bad);};
+      const finish=e=>{if(settled)return;settled=true;cleanup();e?reject(e):resolve()};
+      const ready=e=>{if(String(e.data||'').trim()==='uciok')finish()};
+      const bad=e=>finish(Error('Worker ვერ გაეშვა: '+(e.message||e.type||'უცნობი შეცდომა')));
+      w.addEventListener('message',ready);w.addEventListener('error',bad);
+      w.postMessage('uci');
+    });
+    return w;
+  }catch(e){
+    try{w.terminate()}catch(_){}
+    try{URL.revokeObjectURL(blobUrl)}catch(_){}
+    throw e;
+  }
+}
+async function initSF(k){
+  const s=SF[k];if(s.p)return s.p;
+  s.p=(async()=>{
+    const errors=[];
+    for(const url of SF_JS_WORKERS){
+      try{
+        const w=await startSFWorker(url);
+        s.error='';
+        return w;
+      }catch(e){errors.push(url.split('/')[2]+': '+String(e&&e.message||e).slice(0,120));}
+    }
+    s.error=errors.join(' | ')||'Stockfish ვერ ჩაიტვირთა';
+    return null;
+  })();
+  const result=await s.p;
+  if(!result)s.p=null;
+  return result;
+}
+function sfRun(fen,ms,skill=20,mpv=1,k='main'){
+  const s=SF[k];
+  const job=s.q.then(async()=>{
+    const w=await initSF(k);if(!w)return null;
+    return new Promise(resolve=>{
+      const lines={};let sc=null,finished=false,started=false,timer=null;
+      const finish=value=>{if(finished)return;finished=true;clearTimeout(timer);w.removeEventListener('message',handler);resolve(value)};
+      const handler=e=>{
+        const line=String(e.data||e);
+        if(line==='readyok'&&!started){started=true;w.postMessage('position fen '+fen);w.postMessage('go movetime '+ms);return}
+        const m=line.match(/score (cp|mate) (-?\d+)/),pv=line.match(/ pv (\S+)/),mp=line.match(/multipv (\d+)/);
+        // Keep the most recent *exact* score for the principal line. Ignore bounds.
+        if(m&&!/\s(?:lowerbound|upperbound)(?:\s|$)/.test(line)){
+          const idx=mp?+mp[1]:1,o={u:pv?pv[1]:null,sc:{t:m[1],v:+m[2]}};
+          if(pv)lines[idx]=o;
+          if(idx===1)sc=o.sc;
+        }
+        if(line.startsWith('bestmove')){const u=line.split(/\s+/)[1];finish(u&&u!=='(none)'?{u,sc,list:Object.keys(lines).sort((a,b)=>a-b).map(i=>lines[i])}:null)}
+      };
+      w.addEventListener('message',handler);
+      timer=setTimeout(()=>{w.postMessage('stop');setTimeout(()=>finish(null),900)},ms+5500);
+      w.postMessage('setoption name Skill Level value '+skill);w.postMessage('setoption name MultiPV value '+mpv);w.postMessage('isready');
+      w.onerror=()=>finish(null);
+    });
+  });
+  s.q=job.then(()=>{},()=>{});return job.catch(()=>null);
+}
+const PV={p:1,n:3,b:3,r:5,q:9,k:0};
+function ev(g){let s=0;for(const r of g.board())for(const x of r)if(x)s+=(x.color==='w'?1:-1)*PV[x.type];return s}
+function ab(g,d,a,b){if(d===0||g.game_over())return g.in_checkmate()?(g.turn()==='w'?-900:900):(g.game_over()?0:ev(g));
+  const w=g.turn()==='w';let best=w?-1e9:1e9;
+  for(const m of g.moves()){g.move(m);const v=ab(g,d-1,a,b);g.undo();if(w){if(v>best)best=v;if(v>a)a=v}else{if(v<best)best=v;if(v<b)b=v}if(b<=a)break}return best}
+function weak(){const w=game.turn()==='w';let bm=null,bv=w?-1e9:1e9;
+  for(const m of game.moves({verbose:true})){game.move(m.san);const v=ab(game,2,-1e9,1e9)+Math.random()*.3;game.undo();if(w?v>bv:v<bv){bv=v;bm=m}}return bm}
+function toMove(u){const t=new Chess(game.fen());return u&&u!=='(none)'?t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]}):null}
+const cpv=s=>s?(s.t==='mate'?(s.v>0?1e4-s.v:-1e4-s.v):s.v):0;
+async function engine(skill,ms,mpv){
+  const r=await sfRun(game.fen(),ms,skill,mpv);
+  if(r&&r.u&&r.u!=='(none)'){
+    let pick=r.list.length?r.list[0]:{u:r.u,sc:r.sc};
+    if(mpv>1&&r.list.length>1){const top=cpv(r.list[0].sc),ok=r.list.filter(x=>top-cpv(x.sc)<=70);pick=ok[Math.floor(Math.random()*ok.length)]}
+    const m=toMove(pick.u);
+    if(m){const k=game.turn()==='w'?1:-1,sc=r.sc,s=sc?(sc.t==='mate'?'მატი '+sc.v*k:((sc.v*k>0?'+':'')+(sc.v*k/100).toFixed(1))):'';return{m,txt:m.san+(s?' (შეფასება '+s+')':'')}}}
+  const m=weak();return m?{m,txt:m.san+' (Stockfish ვერ ჩაიტვირთა, ეს მარტივი რჩევაა)'}:null}
+async function requestAutoHint(){
+  if(autoHintBusy||!arrowsOn||!cur||cur.kind==='puz'||cur.busy||game.game_over()||game.turn()!==userColor())return;
+  const me=cur,fen=game.fen();autoHintBusy=true;
+  const r=await sfRun(fen,420,16,1,'main');
+  autoHintBusy=false;
+  if(cur!==me||!arrowsOn||game.fen()!==fen||game.turn()!==userColor()||!r||!r.u||r.u==='(none)')return;
+  const t=new Chess(fen),m=t.move({from:r.u.slice(0,2),to:r.u.slice(2,4),promotion:r.u[4]||'q'});
+  if(!m)return;
+  autoHintFen=fen;autoHintMove={from:m.from,to:m.to};hint=autoHintMove;render();
+}
+async function cpuMove(){
+  const me=cur;if(!me||game.game_over()||game.turn()===me.side)return;
+  me.busy=true;$('eval').textContent='კომპიუტერი ფიქრობს…';const lv=LV[P.eng];
+  const r=await engine(lv.skill,lv.ms,lv.mpv);if(cur!==me)return;me.busy=false;$('eval').textContent='';
+  if(r){last=game.move(r.m.san);anim=true;refresh();if(game.in_checkmate())setMsg('მატი!')}}
+/* ===== დახმარება ===== */
+$('help').onclick=async()=>{
+  if(!cur||cur.busy)return;cur.rev=null;
+  if(cur.kind==='lesson'&&!cur.fin){const m=nextMv();if(!m)return;cur.help={from:m.from,to:m.to};cur.helped=(cur.helped||0)+1;
+    setMsg('დახმარება: '+m.san+(m.e[1]?' — '+m.e[1]:''));refresh();return}
+  if(game.game_over()||game.turn()!==userColor())return;
+  if(cur.kind==='puz'){cur.helped=1;let sm=null;try{sm=whiteMates(new Chess(game.fen()),cur.left,{n:0,max:400000})}catch(e){}
+    if(sm){const t=new Chess(game.fen()).move(sm);cur.help={from:t.from,to:t.to};setMsg('საუკეთესო სვლა: '+sm);refresh();return}}
+  cur.busy=true;$('eval').textContent='Stockfish ფიქრობს…';const me=cur;
+  const r=await engine(20,700,1);if(cur!==me)return;me.busy=false;$('eval').textContent='';if(!r){setMsg('საუკეთესო სვლა ვერ გამოითვალა. სცადე ხელახლა.');refresh();return;}
+  me.help={from:r.m.from,to:r.m.to};setMsg((me.kind==='lesson'?'წიგნის ხაზი დასრულდა. გაგრძელება: ':'საუკეთესო სვლა: ')+r.txt);refresh()};
+$('engsel').onchange=e=>{P.eng=+e.target.value;save()};
+LV.forEach((l,i)=>{const o=document.createElement('option');o.value=i;o.textContent='დონე '+l.n;$('engsel').appendChild(o)});$('engsel').value=P.eng;
+$('mode').onclick=()=>{cur.mode=cur.mode==='learn'?'practice':'learn';cur.help=null;refresh()};
+$('arrows').onclick=()=>{arrowsOn=!arrowsOn;if(!arrowsOn){autoHintFen=null;autoHintMove=null;} $('arrows').textContent='ისრები: '+(arrowsOn?'ჩართული':'გამორთული');$('arrows').setAttribute('aria-pressed',String(arrowsOn));refresh()};
+$('prev').onclick=()=>{const r=(cur.rev==null?cur.step:cur.rev)-1;cur.rev=Math.max(0,r);const e=cur.hist[cur.rev-1];setMsg(e?(e.c||'სვლა '+e.san):'');refresh()};
+$('next').onclick=()=>{if(cur.rev==null)return;const r=cur.rev+1;cur.rev=r>=cur.step?null:r;const e=cur.hist[(cur.rev==null?cur.step:cur.rev)-1];setMsg(e?(e.c||'სვლა '+e.san):'');refresh()};
+$('flip').onclick=()=>{flip=!flip;refresh()};
+$('reset').onclick=()=>{if(cur.kind==='lesson')startLesson(cur.i);else startFree()};
+$('np').onclick=newPuzzle;
+/* ===== მატის ამოცანები (პაზლები) ===== */
+function endFen(L){
+  const rnd=n=>Math.floor(Math.random()*n),used=new Set(),B={},key=a=>a[0]+','+a[1],ok=a=>a[0]>=0&&a[0]<8&&a[1]>=0&&a[1]<8;
+  let bk;for(;;){bk=[rnd(8),rnd(8)];if(L>=6||bk[0]%7===0||bk[1]%7===0)break}used.add(key(bk));
+  let wk=null;for(let i=0;i<60&&!wk;i++){const c=[bk[0]+rnd(5)-2,bk[1]+rnd(5)-2];if(ok(c)&&Math.max(Math.abs(c[0]-bk[0]),Math.abs(c[1]-bk[1]))>=2&&!used.has(key(c)))wk=c}
+  if(!wk)return null;used.add(key(wk));B[key(bk)]='k';B[key(wk)]='K';
+  const put=(ch,lo,hi)=>{for(let i=0;i<40;i++){const c=[rnd(8),lo+rnd(hi-lo+1)];if(!used.has(key(c))){used.add(key(c));B[key(c)]=ch;return}}};
+  [['Q'],['R','R'],['Q','N'],['R','B']][rnd(4)].forEach(x=>put(x,0,7));
+  return toFen(B)}
+function toFen(B){const rows=[];for(let r=7;r>=0;r--){let s='',e=0;for(let f=0;f<8;f++){const ch=B[f+','+r];if(ch){if(e)s+=e;e=0;s+=ch}else e++}if(e)s+=e;rows.push(s)}
+  const fen=rows.join('/')+' w - - 0 1',t=new Chess();
+  if(!t.load(fen)||t.in_check()||!t.moves().length||new Chess(fen.replace(' w ',' b ')).in_check())return null;return fen}
+/* რეალური შუა თამაშის სტილის პაზლები: დაცული მეფე, ფიგურები და პაიკები */
+function midFen(L){
+  const rnd=n=>Math.floor(Math.random()*n),used=new Set(),B={},key=(f,r)=>f+','+r;
+  const put=(ch,f,r)=>{if(f<0||f>7||r<0||r>7||used.has(key(f,r)))return false;used.add(key(f,r));B[key(f,r)]=ch;return true};
+  const rs=(ch,lo,hi,flo=0,fhi=7)=>{for(let i=0;i<40;i++)if(put(ch,flo+rnd(fhi-flo+1),lo+rnd(hi-lo+1)))return};
+  const ks=rnd(2),bkf=ks?6:1;put('k',bkf,7);
+  [[bkf-1,6],[bkf,6],[bkf+1,6]].forEach(p=>{if(rnd(6))put('p',p[0],p[1])});
+  if(rnd(3)===0){put('p',bkf+(ks?1:-1),5)}
+  const pool=[['r',ks?5:3,7],['n',ks?5:2,5],['b',ks?4:3,6],['q',3,7],['n',3,6],['b',ks?6:1,5],['r',ks?4:2,7]],nb=Math.min(4,1+Math.floor(L/2));
+  for(let i=pool.length-1;i>0;i--){const j=rnd(i+1);[pool[i],pool[j]]=[pool[j],pool[i]]}
+  pool.slice(0,nb).forEach(p=>put(p[0],p[1],p[2]));
+  const wkf=rnd(2)?6:1;put('K',wkf,0);[[wkf-1,1],[wkf,1],[wkf+1,1]].forEach(p=>{if(rnd(5))put('P',p[0],p[1])});
+  rs('Q',2,6);rs('R',2,7);if(rnd(2))rs('R',0,7);
+  for(let i=0;i<Math.min(3,1+Math.floor(L/3));i++)rs(rnd(2)?'N':'B',2,6);
+  for(let i=0;i<rnd(3);i++)rs('P',2,4);
+  return toFen(B)}
+const PUZ={"m2":["6k1/5ppp/5nb1/8/B7/1R2QN2/2P5/1K6|e","1k6/ppp5/1bn5/8/1R6/1QB3N1/P1P5/1K6|e","5rk1/3nRp2/3Q4/4PN2/N7/8/5PPP/6K1|e","6k1/R3bppp/6b1/2B5/3N1Q2/8/6PP/6K1|e","1kr5/pp1n1Q1N/p7/4N3/2R5/8/PPP5/1K6|e","k7/7Q/8/K7/8/8/8/8|k","5k2/3Q4/7K/8/8/8/8/8|k","3k4/1P6/8/8/K7/8/6R1/8|p","1k6/8/K6Q/8/4p3/8/8/8|k","2k5/2P5/8/Q7/8/8/8/5K2|p","4k3/4P3/8/8/8/2Q5/8/2K5|p","5k2/3Q1P2/8/8/2K5/8/8/8|p","1k6/3P4/8/2K5/8/8/3Q4/8|p","4k3/8/1N4K1/8/8/8/2Q5/8|k","3k4/5B2/5K2/4Q3/8/8/8/8|i","7k/R2N4/8/8/3p4/8/8/K7|r","4N2k/1R6/8/8/3p4/8/8/5K2|r","7k/1R1N4/8/8/5n2/8/8/3K4|r","k7/6R1/8/N7/8/3b4/8/4K3|r","7k/8/b3b2K/8/2Q5/8/8/8|k","5Q2/7k/8/8/3p3K/6B1/8/8|i","8/k7/8/1K6/3p4/8/2Q5/4B3|i","7k/3R2r1/5N2/2n5/8/8/8/5K2|r","7k/3R4/8/8/5PN1/5p2/8/2K5|r","4k3/2P3P1/8/5N2/6K1/1n6/8/8|p","2rp2k1/6P1/3Q4/8/8/8/5K2/8|p","3k4/1P6/8/8/2p3K1/6n1/1Q6/8|p","k7/6R1/1p6/8/3N2B1/8/8/6K1|r","3k4/5P2/5P2/4Q2r/8/5p2/8/6K1|p","7k/1n1q2pN/8/8/8/8/8/2K4R|a","6k1/6p1/2N5/8/p7/5R1n/8/7K|a","7k/2R5/p7/5p1N/8/2N5/8/6K1|r","k1r5/pp6/N7/8/8/8/7Q/K7|s","7k/3R4/8/8/4N3/4b2B/8/3K3N|r","k7/3p1nn1/1K2Q3/8/8/8/8/6N1|k","6k1/6p1/8/3N3n/5R2/7Q/8/7K|a","6k1/5p1p/6P1/8/8/5Q2/3K4/2BR4|i","1k6/2p5/1P1QB3/8/2n5/8/2R5/2K5|i","6k1/3Q1p2/2b3P1/2R5/8/8/8/K3B3|i","7k/8/Q4N1N/8/8/4n1r1/8/K6R|a","k7/1p6/n1N5/8/3b4/1R1P4/R7/4K3|r","1B4k1/1Q3p1p/2R3P1/r7/8/8/8/2K5|b","1k6/2p5/1Pp5/6b1/8/Q7/4B3/3R1K2|i","6k1/4b1p1/2N5/5R1r/3R4/8/7R/1K6|a","1N4k1/4Qppp/6P1/1Rb5/1n6/8/8/K7|p","5r1k/3RR1pp/7N/6p1/7b/1Q6/8/1K6|s","1k1r3R/3b4/1Bn1Q3/2N4P/4N3/6R1/5P2/6K1|t","1k1r4/pp1nN3/3RN1N1/2P3N1/2R5/1Q6/2P5/1K6|n","3qr1k1/3nbp1p/3N2bB/R1B5/1N4R1/B3BQ1P/5PPP/6K1|i"],"m3":["1k1r4/p1pb4/p1B5/5Q2/1N4R1/8/PP6/1K6|e","1k1q4/1ppb4/5QR1/1N6/4B3/3B2N1/5PP1/6K1|e","1k6/p1p3NQ/pbnR4/2P5/8/7B/5PPP/6K1|e","3R1rk1/N2Bbppp/8/5Q2/5R2/8/5PPP/6K1|e","k7/N1R1N3/8/1b6/8/8/6N1/7K|r","1rkq4/5RN1/8/4N3/8/3R4/8/2K5|n","6k1/5pp1/6p1/5N2/8/6R1/7R/K7|a","k1r5/pp6/N1r5/3N4/5Q2/8/8/4K2P|s","4r1k1/2Bn1ppp/4Qn2/3BN3/8/R7/P1P5/1K6|s","6k1/6pp/3R1nbp/2P1QN2/8/5B2/PPP5/1K6|t","4r1k1/2B1bp1p/5Rb1/6Q1/8/2B1R2B/5PP1/6K1|t","3q2k1/3n1pp1/4QnB1/2R1N3/3B4/6P1/PPP5/1K6|t","1k1qR3/p1pb1R2/p5Q1/4B3/8/1B1BP3/6PP/6K1|t","3qr1k1/2BRbp1p/6BR/4N3/P7/3Q4/PP6/1K6|t","1k1r4/ppp1R3/p1n5/7B/1P1RQ1B1/8/PPP5/1K6|t","1k1r4/pppb1B2/1b6/2N2N2/3R1B2/Q4B2/1PP5/1K6|t","1k1r4/pppb4/Rb6/3B4/2NN3Q/P7/PPP5/1KR5|t","1k1r4/p1pn4/1bBQ4/8/N2R1R2/1N2B1P1/5PPP/6K1|t","1k1q1R2/pppb4/p1nN1Q2/2P1B1R1/8/4N3/5PPP/6K1|t","4r1k1/2Bn1ppp/5nbp/2Q1RN2/2N1R3/1P1P3B/5PPP/6K1|t"]};
+const USED_PUZZLES={m2:new Set(),m3:new Set()};
+/* ამოცანები წინასწარ არის გადამოწმებული: ზუსტად იძულებითი მატი, ცრუ ამოცანა არ გამოდის */
+function pickPuz(k,lvl){const a=PUZ[k],used=USED_PUZZLES[k];let free=a.map((f,i)=>i).filter(i=>!used.has(i));
+  if(!free.length){used.clear();free=a.map((f,i)=>i)}
+  const pos=Math.min(1,(lvl-1)/11)*(a.length-1);free.sort((x,y)=>Math.abs(x-pos)-Math.abs(y-pos));
+  const i=free[Math.floor(Math.random()*Math.min(4,free.length))];used.add(i);const e=a[i].split('|');return{fen:e[0]+' w - - 0 1',tag:e[1]}}
+function exactMateScore(result,movesLeft){
+  // UCI mate scores are relative to the side to move: a negative score here
+  // means the defender is getting mated, which is what a puzzle requires.
+  const score=result&&result.sc;
+  return !!(score&&score.t==='mate'&&score.v<0&&-score.v<=movesLeft);
+}
+async function exactMateTree(positionFen,movesLeft,budgetMs){
+  // Full legal-move proof: White chooses (OR), Black may choose any reply (AND).
+  // This is what lets the puzzle accept every genuinely winning first move,
+  // rather than only the engine's one preferred principal variation.
+  const g=new Chess(positionFen),ctx={nodes:0,deadline:Date.now()+budgetMs,maxNodes:1500000,cache:new Map()};
+  const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
+  const visit=async(left,root=false)=>{
+    ctx.nodes++;
+    if(ctx.nodes%220===0)await tick();
+    if(ctx.nodes>ctx.maxNodes||Date.now()>ctx.deadline)return{ok:false,aborted:true};
+    if(g.in_checkmate())return{ok:g.turn()==='b'};
+    if(g.game_over())return{ok:false};
+    const key=g.fen().split(' ').slice(0,4).join(' ')+'|'+left;
+    if(!root&&ctx.cache.has(key))return{ok:ctx.cache.get(key)};
+    const moves=g.moves({verbose:true});
+    if(!moves.length)return{ok:false};
+    if(g.turn()==='w'){
+      if(left<=0)return{ok:false};
+      let unknown=false;
+      for(const m of moves){
+        g.move(m.san);
+        const child=g.in_checkmate()?{ok:true}:(left>1?await visit(left-1,false):{ok:false});
+        g.undo();
+        if(child.ok){ctx.cache.set(key,true);return{ok:true};}
+        if(child.aborted)unknown=true;
+      }
+      if(unknown)return{ok:false,aborted:true};
+      ctx.cache.set(key,false);return{ok:false};
+    }
+    // Black's move is an AND node: every legal defense must still allow mate.
+    let reply=null,unknown=false;
+    for(const m of moves){
+      g.move(m.san);
+      const child=await visit(left,false);
+      g.undo();
+      if(!child.ok){if(child.aborted){unknown=true;continue;}ctx.cache.set(key,false);return{ok:false};}
+      if(root&&!reply)reply=m.from+m.to+(m.promotion||'');
+    }
+    if(unknown)return{ok:false,aborted:true};
+    ctx.cache.set(key,true);return{ok:true,reply};
+  };
+  const result=await visit(movesLeft,true);
+  return Object.assign(result,{nodes:ctx.nodes});
+}
+async function provePuzzleMove(positionFen,movesLeft){
+  // First try an exact search of every legal defense. It accepts alternate
+  // mating moves even when they are not Stockfish's top line.
+  const exact=await exactMateTree(positionFen,movesLeft,movesLeft===1?3000:9000);
+  if(exact.ok&&exact.reply)return{u:exact.reply,exact:true};
+  if(!exact.aborted)return null;
+  // If the full tree is too large, fall back to Stockfish's strongest defense.
+  const first=movesLeft<=1?1400:(movesLeft===2?2300:3200);
+  let r=await sfRun(positionFen,first,20,1,'main');
+  if(exactMateScore(r,movesLeft))return r;
+  const second=movesLeft<=1?2600:(movesLeft===2?5200:7000);
+  r=await sfRun(positionFen,second,20,1,'main');
+  return exactMateScore(r,movesLeft)?r:null;
+}
+async function genOne(n,lvl,k,owner,onCandidate){
+  const worker=await initSF(k);
+  if(!worker)return null;
+  const total=50;let engineFailures=0;
+  for(let t=0;t<total;t++){
+    if(owner&&cur!==owner)return undefined;
+    let fen=null,probe=null;
+    try{
+      fen=t<35?midFen(lvl):endFen(lvl);
+      if(!fen||USED_PUZZLES[owner.k].has(fen))continue;
+      probe=new Chess(fen);
+      if(!probe.moves().length)continue;
+    }catch(e){continue}
+    if(onCandidate)onCandidate(t+1,total,fen);
+    let hasCheck=false;
+    try{hasCheck=probe.moves().some(m=>m.includes('+'))}catch(e){continue}
+    if(t<45&&!hasCheck)continue;
+    // Give the engine enough time to find a real forced mate. A short first
+    // search filters candidates; the longer confirmation prevents false puzzles.
+    const first=await sfRun(fen,n===2?900:1500,20,1,k);
+    if(owner&&cur!==owner)return undefined;
+    if(!first){engineFailures++;if(engineFailures>=3){SF[k].error=SF[k].error||'Stockfish-ის ძრავამ პასუხი შეწყვიტა';return null;}continue;}
+    engineFailures=0;
+    if(!first.sc||first.sc.t!=='mate'||first.sc.v!==n)continue;
+    const confirm=await sfRun(fen,n===2?2200:4200,20,1,k);
+    if(owner&&cur!==owner)return undefined;
+    if(!confirm){engineFailures++;if(engineFailures>=3){SF[k].error=SF[k].error||'Stockfish-ის ძრავამ პასუხი შეწყვიტა';return null;}continue;}
+    engineFailures=0;
+    if(confirm.sc&&confirm.sc.t==='mate'&&confirm.sc.v===n&&confirm.u&&confirm.u!=='(none)'){
+      // Do not publish an engine-only guess: verify the entire legal move tree.
+      const proof=await exactMateTree(fen,n,n===2?2200:4200);
+      if(owner&&cur!==owner)return undefined;
+      if(proof.ok){
+        USED_PUZZLES[owner.k].add(fen);
+        return fen;
+      }
+    }
+  }
+  // undefined means this batch had no puzzle; null means Stockfish failed to load.
+  return undefined;
+}
+async function newPuzzle(){
+  const k=catKey,n=CATS[k].gen,lvl=Math.floor(P.lv[k]);
+  const me=cur={kind:'puz',n,k,left:n,helped:0,busy:false,rev:null,side:'w',done:false,fen:null};
+  const pz=pickPuz('m'+n,lvl);me.fen=pz.fen;game=new Chess(me.fen);const TH={e:'მარტივი მატი',b:'უკანა რიგის მატი',s:'smothered მატი',r:'არაბული მატი',a:'ანასტასიას მატი',p:'მატი პაიკის გადაქცევით',k:'დედოფლისა და მეფის მატი',i:'ოფიცრით მატი',n:'ცხენით მატი',o:'ბოდენის მატი',e:'ეპოლეტის მატი',d:'დამიანოს მატი',t:'ტაქტიკური მატი'}[pz.tag];last=null;sel=null;flip=false;$('vars').innerHTML='';$('board').style.opacity=1;boardNotice('');
+  $('ltitle').textContent='მატი '+n+' სვლაში';
+  setMsg('თეთრი თამაშობს და აძლევს მატს '+n+' სვლაში. გაქვს '+n+' სვლა, ნებისმიერი სვლა შეგიძლია გააკეთო. თუ ვერ მოახერხე, ამოცანა თავიდან დაიწყება. თემა: '+TH+'.');refresh();
+}
+function whiteMates(g,left,c){
+  for(const m of g.moves()){
+    if(++c.n>c.max)throw 0;
+    g.move(m);let ok=false;
+    if(g.in_checkmate())ok=true;
+    else if(left>1&&!g.game_over()){ok=true;for(const r of g.moves()){g.move(r);const w=whiteMates(g,left-1,c);g.undo();if(!w){ok=false;break}}}
+    g.undo();if(ok)return m}
+  return null}
+function pickDefense(g,left){
+  const all=g.moves(),safe=[];
+  for(const r of all){g.move(r);let mt=null;try{mt=whiteMates(g,left,{n:0,max:12000})}catch(e){}g.undo();if(!mt)safe.push(r)}
+  const pool=safe.length?safe:all;return pool[Math.floor(Math.random()*pool.length)]}
+function restartPuz(me){if(cur!==me)return;game=new Chess(me.fen);last=null;sel=null;me.left=me.n;me.help=null;me.busy=false;me.helped=0;refresh()}
+async function puzMove(from,to,dragged){
+  const me=cur;
+  if(!me||me.busy||me.done)return render();
+  const choices=game.moves({verbose:true}).filter(x=>x.from===from&&x.to===to);
+  if(!choices.length)return render();
+  sel=null;me.busy=true;me.help=null;
+  last=game.move({from,to,promotion:choices[0].promotion||'q'});anim=!dragged;me.left--;
+  if(game.in_checkmate()){
+    me.done=true;
+    P.lv[me.k]=me.helped?Math.max(1,P.lv[me.k]-.5):Math.min(12,P.lv[me.k]+1);logAct(me.k,CATS[me.k].n);save();
+    setMsg('მატი! ✓ '+(me.helped?'დახმარება გამოიყენე. ':'შესანიშნავია! ')+'შემდეგი ამოცანა იწყება…');refresh();
+    setTimeout(()=>{if(cur===me)newPuzzle()},1600);return}
+  refresh();
+  if(me.left<=0||game.game_over()){
+    shake();setMsg('მატი ვერ მოხერხდა '+me.n+' სვლაში. ამოცანა თავიდან იწყება…');
+    setTimeout(()=>restartPuz(me),1500);return}
+  setMsg('შავი ფიქრობს…');
+  setTimeout(()=>{
+    if(cur!==me)return;
+    const r=pickDefense(game,me.left);
+    last=game.move(r);anim=true;me.busy=false;
+    setMsg('დარჩა '+me.left+' სვლა მატისთვის.');refresh()},350);
+}
+/* ===== გადატანა (drag) და დაჭერა ===== */
+const bd=$('board');
+bd.addEventListener('pointerdown',e=>{
+  const sq=e.target.closest('.sq');if(!sq||!cur)return;e.preventDefault();
+  if(cur.rev!=null){cur.rev=null;refresh();return}
+  if(cur.busy)return;
+  const name=sq.dataset.n,p=game.get(name),mine=p&&p.color===userColor()&&game.turn()===userColor();
+  if(sel&&!mine){attempt(sel,name,false);return}
+  if(mine){const was=sel===name;sel=name;drag={from:name,sx:e.clientX,sy:e.clientY,moved:false,was};dragF=null;render()}});
+window.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6){drag.moved=true;dragF=drag.from;
+    const g=$('ghost'),p=game.get(drag.from),w=bd.clientWidth/8;g.hidden=false;g.className=p.color;g.textContent=GL[p.type.toUpperCase()];g.style.width=g.style.height=w+'px';g.style.fontSize=w*.95+'px';render()}
+  if(drag.moved){const g=$('ghost');g.style.left=e.clientX+'px';g.style.top=e.clientY+'px'}});
+window.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;drag=null;dragF=null;$('ghost').hidden=true;
+  if(d.moved){const el=document.elementFromPoint(e.clientX,e.clientY),s=el&&el.closest&&el.closest('.sq'),to=s&&s.dataset.n;
+    if(to&&to!==d.from)attempt(d.from,to,true);else{sel=null;render()}}
+  else if(d.was){sel=null;render()}});
+/* ===== მენიუ და პროფილი ===== */
+function welcome(){
+  const box=document.createElement('div');box.className='card';box.style.gridColumn='1/-1';
+  const L=P.log,last=L[L.length-1],line=t=>{const p=document.createElement('p');p.style.margin='0 0 6px';p.textContent=t;box.appendChild(p)};
+  const h=document.createElement('h2');h.textContent=P.name?'გამარჯობა, '+P.name+'!':'მოგესალმები!';box.appendChild(h);
+  if(last){const days=Math.round((new Date(today())-new Date(last.d))/864e5);
+    line(days===0?'დღეს უკვე ისწავლე: '+last.t+' ✓':days===1?'გუშინ ისწავლე: '+last.t+' ✓ — აქ გავლილად არის მონიშნული.':'ბოლოს ისწავლე: '+last.t+' ✓ ('+days+' დღის წინ). კარგია, რომ დაბრუნდი!');
+    const ds=[...new Set(L.map(x=>x.d))].sort().reverse();let st=0,d=new Date(today());if(ds[0]!==today())d.setDate(d.getDate()-1);
+    for(const x of ds){if(x===d.toLocaleDateString('sv')){st++;d.setDate(d.getDate()-1)}else if(x<d.toLocaleDateString('sv'))break}
+    if(st>=2)line('🔥 '+st+' დღე ზედიზედ');
+  }else line('დავიწყოთ პირველი გაკვეთილით.');
+  const order=['def','open','gam'],at=last&&order.indexOf(last.k)>=0?order.indexOf(last.k)+1:0;let pick=null;
+  for(let a=0;a<3&&!pick;a++){const k=order[(at+a)%3],it=CATS[k].items;const i=it.findIndex(l=>!P.done[k+':'+l.t]);if(i>=0)pick={k,i,t:it[i].t,c:CATS[k].n}}
+  const b=document.createElement('button');b.className='main';
+  if(pick){line('დღეს გირჩევ: '+pick.t+' ('+pick.c+')');b.textContent='დაწყება';b.onclick=()=>{openCat(pick.k);startLesson(pick.i)}}
+  else{line('ყველა გაკვეთილი გავლილი გაქვს! დღეს ივარჯიშე მატის ამოცანებზე.');b.textContent='მატი 3 სვლაში';b.onclick=()=>openCat('m3')}
+  box.appendChild(b);return box}
+function showMenu(){
+  catKey=null;cur=null;hint=null;$('menu').hidden=false;$('study').hidden=true;$('back').hidden=true;
+  $('sub').textContent=P.name?'გამარჯობა, '+P.name+'! აირჩიე, რისი სწავლა გინდა.':'აირჩიე, რისი სწავლა გინდა.';
+  $('prof').textContent='👤 '+(P.name||'სახელის დაწერა');
+  const m=$('menu');m.innerHTML='';m.className='view';m.appendChild(welcome());
+  Object.entries(CATS).forEach(([k,c])=>{const b=document.createElement('button');b.className='cat';
+    const extra=c.gen?' · დონე '+Math.round(P.lv[k]*10)/10:(c.items?' · ✓ '+c.items.filter(l=>P.done[k+':'+l.t]).length+'/'+c.items.length:'');
+    b.innerHTML='<b>'+c.n+'</b><span>'+c.d+extra+'</span>';b.onclick=()=>openCat(k);m.appendChild(b)})}
+function openCat(k){
+  catKey=k;const c=CATS[k];$('menu').hidden=true;$('study').hidden=false;$('study').className='view';$('back').hidden=false;$('sub').textContent=c.n;
+  LESSONS=c.items||[];LESSONS.forEach(l=>l.id=k+':'+l.t);$('lhead').textContent=c.n;
+  const box=$('lessons');box.innerHTML='';
+  LESSONS.forEach((l,i)=>{const b=document.createElement('button');b.textContent=l.t;b.onclick=()=>startLesson(i);box.appendChild(b)});
+  if(c.gen){box.innerHTML='<p style="margin:0;color:var(--mute)">ამოცანები ახალია ყოველ ჯერზე. სწორი ამოხსნა სირთულეს ზრდის, დახმარება ოდნავ ამცირებს.</p>';newPuzzle()}
+  else if(k==='free'){box.innerHTML='<p style="margin:0;color:var(--mute)">ითამაშე Stockfish-ის წინააღმდეგ.</p>';startFree()}
+  else startLesson(0)}
+$('back').onclick=showMenu;
+$('prof').onclick=()=>{const n=prompt('შენი სახელი (პროგრესი ამ ბრაუზერში შეინახება):',P.name);if(n!==null){P.name=n.trim();save();showMenu()}};
+$('exp').onclick=()=>{const c=btoa(unescape(encodeURIComponent(JSON.stringify(P))));try{navigator.clipboard.writeText(c)}catch(e){}prompt('შენი პროგრესის კოდი (დაკოპირდა). შეინახე სადმე:',c)};
+$('imp').onclick=()=>{const c=prompt('ჩასვი პროგრესის კოდი:');if(!c)return;try{P=Object.assign({name:'',done:{},lv:{m2:1,m3:1}},JSON.parse(decodeURIComponent(escape(atob(c.trim())))));save();showMenu()}catch(e){alert('კოდი არასწორია.')}};
+showMenu();
+
+</script>
+<script>
+(function loadChessLibrary(){
+  const sources = [
+    'https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js',
+    'https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.js',
+    'https://unpkg.com/chess.js@0.10.3/chess.js'
+  ];
+  let index = 0;
+  function showLoadError(){
+    const sub = document.getElementById('sub');
+    const menu = document.getElementById('menu');
+    if (sub) sub.textContent = 'ჭადრაკის ბიბლიოთეკა ვერ ჩაიტვირთა.';
+    if (menu) menu.innerHTML = '<div style="background:white;padding:18px;border-radius:10px;grid-column:1/-1">ინტერნეტთან კავშირი ან ბრაუზერის ბლოკირება ხელს უშლის ჭადრაკის წესების ბიბლიოთეკის ჩატვირთვას. განაახლე გვერდი ან სცადე სხვა ქსელით.</div>';
+  }
+  function boot(){
+    if (typeof window.Chess !== 'function') { loadNext(); return; }
+    const source = document.getElementById('app-code');
+    if (!source) { showLoadError(); return; }
+    const runner = document.createElement('script');
+    runner.textContent = source.textContent;
+    document.body.appendChild(runner);
+  }
+  function loadNext(){
+    if (index >= sources.length) { showLoadError(); return; }
+    const script = document.createElement('script');
+    script.src = sources[index++];
+    script.async = true;
+    script.onload = boot;
+    script.onerror = loadNext;
+    document.head.appendChild(script);
+  }
+  loadNext();
+})();
+</script>
+</body>
+</html>
